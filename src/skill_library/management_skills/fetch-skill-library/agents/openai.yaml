@@ -1,0 +1,3 @@
+interface:
+  display_name: "Fetch Skill Library"
+  short_description: "Install selected skills into one project"
