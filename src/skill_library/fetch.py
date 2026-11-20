@@ -28,7 +28,7 @@ def _install_dir(project: Path, agent: str) -> Path:
     if agent not in AGENT_DIR:
         raise LibraryError("agent must be codex or claude")
     dest = project / AGENT_DIR[agent]
-    if dest.is_symlink() or not dest.resolve().is_relative_to(project):
+    if dest.is_symlink() or not dest.resolve().is_relative_to(project.resolve()):
         raise LibraryError("project skill directory escapes project")
     return dest
 
