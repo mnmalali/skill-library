@@ -1,62 +1,76 @@
 # Skill Library
 
-Skill Library is a local, shared collection of Agent Skills. It imports full skill folders into one library, maintains category indexes, and copies selected, reviewed skills into one project at a time. It does not run imported scripts.
+**A shared folder for Agent Skills, organized and fetched by your AI agent.**
 
-This is a **0.1 prerelease**. See [limitations](docs/LIMITATIONS.md) before using it with third-party skills.
+Skill Library keeps one collection of skill folders on your computer. Each skill is a normal `SKILL.md` file with any references, assets, or scripts that belong to it. Two small management skills tell Codex or Claude Code how to organize the collection and copy only relevant skills into a project. There is no Python package, database, server, account, or background process.
 
-## Install
-
-Requires Python 3.11 or newer.
-
-```sh
-python -m pip install .
-skill-library init
-skill-library bootstrap --agents codex claude
+```text
+~/Skill-Library/
+├── INDEX.md                         # Browse top-level categories
+├── CATALOG.md                       # Provenance and review status
+├── Development/
+│   ├── INDEX.md
+│   └── accessibility-audit/
+│       └── SKILL.md
+└── .management/                     # Source copies of the two management skills
+    ├── setup-skill-library/SKILL.md
+    └── fetch-skill-library/SKILL.md
 ```
 
-`bootstrap` installs only the two management skills into each agent's user skill directory and writes a pointer to the same library root. It does not install collected skills globally. Omit an agent if you do not use it. Use `--root PATH` before the command to choose another library.
+This repository is an **empty library starter**. The `Development` category above illustrates what it can become; no collected third-party skills ship with the starter.
 
-## Import and review
+## How it works
 
-```sh
-skill-library add ./my-skill --category Development --dry-run
-skill-library add ./my-skill --category Development
-skill-library list
-skill-library trust RECORD_ID
-skill-library index --check
-```
+1. Keep this repository at `~/Skill-Library`, or choose another location and tell your agent where it is.
+2. Install the two folders in `.management/` into your agent's personal skill directory. These are the only skills installed globally.
+3. Ask the agent to add skills to the library or fetch selected skills for a project.
 
-`add` accepts a skill directory, a folder containing several skills, a ZIP or TAR archive, or a public `https://github.com/OWNER/REPO` URL. A GitHub URL can include `/tree/BRANCH/SUBDIRECTORY` for branches without slashes. Imports preserve all files in each bundle byte for byte. They are marked untrusted until a human reviews and trusts a specific content hash. Exact duplicate bundles are skipped. Distinct bundles sharing a name are kept separately.
+The collection stays in one place. A fetched skill is a **copy** inside that project, so the project keeps working if the central library changes. Codex project copies go to `.agents/skills/`; Claude Code project copies go to `.claude/skills/`. The collection itself is outside those project discovery paths. See [agent setup](docs/AGENT_SETUP.md) for installation paths and examples.
 
-## Fetch to a project
+## Quick start
+
+Clone the starter into your home directory:
 
 ```sh
-skill-library fetch --agent codex --project ./my-project --description "React storefront"
-skill-library fetch --agent codex --project ./my-project --skills react-patterns
-skill-library fetch --agent claude --project ./my-project --skills RECORD_ID
+git clone https://github.com/mnmalali/skill-library.git ~/Skill-Library
 ```
 
-A description returns recommendations for approval; it does not install them. An exact, unique, trusted name or ID installs directly. `--auto` selects up to three trusted recommendations. Codex project copies go under `.agents/skills/`; Claude copies go under `.claude/skills/`. Each project receives only its selected bundles. Existing different content is never overwritten.
+Then copy the management skills to the personal skill directory used by your agent. For example, on this Codex desktop setup in PowerShell:
 
-## Maintenance
-
-```sh
-skill-library search accessibility
-skill-library doctor
-skill-library reorganize RECORD_ID --category Quality/Accessibility --dry-run
-skill-library reorganize RECORD_ID --category Quality/Accessibility
-skill-library sync-status
-skill-library --json list
+```powershell
+New-Item -ItemType Directory -Force "$HOME/.codex/skills" | Out-Null
+Copy-Item -Recurse "$HOME/Skill-Library/.management/setup-skill-library" "$HOME/.codex/skills/"
+Copy-Item -Recurse "$HOME/Skill-Library/.management/fetch-skill-library" "$HOME/.codex/skills/"
 ```
 
-The root defaults to `~/Skill-Library`. `SKILL_LIBRARY_ROOT` or `--root` overrides it. The CLI returns exit code 2 for validation or integrity failures. `--json` is a global option before the command.
+For Claude Code, use `$HOME/.claude/skills/` as the destination. [Agent setup](docs/AGENT_SETUP.md) also covers Codex installations that use `~/.agents/skills/`, custom library paths, and existing skill folders. Start a new agent session after installation.
 
-## Development
+Try these requests:
 
-```sh
-python -m pip install -e .
-python -m unittest discover -s tests -v
-python -m build
-```
+> Set up my Skill Library at `~/Skill-Library`.
+>
+> Add this local skill folder to my library and file it under Accessibility.
+>
+> Recommend skills from my library for this React project.
+>
+> Fetch `accessibility-audit` into this project for Codex.
 
-The project has no server or account dependency. Git sync is manual so local edits cannot be reset automatically. Read [security](SECURITY.md), [contributing](CONTRIBUTING.md), and [discovery notes](docs/DISCOVERY.md).
+## Library format
+
+- Every collected skill remains a complete folder with its original `SKILL.md` and supporting files.
+- `INDEX.md` at the root and in each category lists **direct children only**, with short descriptions and relative links.
+- `CATALOG.md` records an ID, location, source, license, and review status for each collected skill. The skill files remain the source of truth.
+- Categories are created as needed. The agent can suggest a category; your preferred organization wins.
+- Same-name skills with different contents stay separate. An exact duplicate can be skipped after the agent verifies the complete bundle.
+
+The format follows the [Agent Skills specification](https://agentskills.io/specification). See [library conventions](docs/CONVENTIONS.md) for the folder and catalog rules.
+
+## Safety and limits
+
+An imported skill can contain instructions or scripts from someone else. The management skills direct the agent to inspect sources as **untrusted data**, avoid executing imported content during import or search, and request review before an untrusted skill is installed into a project. Agent instructions are guidance, not a security sandbox or an atomic transaction system. Keep this library under version control and review changes before sharing third-party skills. See [security guidance](SECURITY.md).
+
+## Repository status
+
+Version **0.2.0** replaces the earlier Python CLI prerelease with the Markdown-first design. The earlier `0.1.0` release is retained for history and should not be used for this workflow. See the [changelog](CHANGELOG.md).
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). This repository's original content is MIT licensed. Imported third-party skills keep their own licenses.
